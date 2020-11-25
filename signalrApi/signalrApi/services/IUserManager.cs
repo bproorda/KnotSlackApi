@@ -1,8 +1,12 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using signalrApi.Data;
+using signalrApi.Models;
+using signalrApi.Models.DTO;
 using signalrApi.Models.Identity;
+using signalrApi.Repositories.UserChannelRepos;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
@@ -16,13 +20,15 @@ namespace signalrApi.services
     public class UserManagerWrapper : IUserManager
     {
         private readonly UserManager<ksUser> userManager;
+        private readonly RoleManager<IdentityRole> roleManager;
         private readonly IConfiguration configuration;
         private knotSlackDbContext _context;
 
-        public UserManagerWrapper(UserManager<ksUser> userManager, IConfiguration configuration, knotSlackDbContext _context)
+        public UserManagerWrapper(UserManager<ksUser> userManager, IConfiguration configuration, knotSlackDbContext _context, RoleManager<IdentityRole> roleManager)
         {
             this.userManager = userManager;
             this.configuration = configuration;
+            this.roleManager = roleManager;
             this._context = _context;
         }
 
@@ -36,10 +42,14 @@ namespace signalrApi.services
             return userManager.CheckPasswordAsync(user, password);
         }
 
-        public Task<IdentityResult> CreateAsync(ksUser user, string password, string role)
+        public async Task<IdentityResult> CreateAsync(ksUser user, string password, string role)
         {
-            var result = userManager.CreateAsync(user, password);
-            AddRole(user, role);
+            var result = await userManager.CreateAsync(user, password);
+
+            //AddRole(user, role);
+            await userManager.AddToRoleAsync(user, role);
+           await AddNewUserToGeneral(user.UserName);
+
             return result;
         }
 
@@ -86,26 +96,83 @@ namespace signalrApi.services
             throw new NotImplementedException();
         }
 
-        public void AddRole(ksUser user, string role)
+        public async void AddRole(ksUser user, string role)
         {
-            userManager.AddToRoleAsync(user, role);
+            await userManager.AddToRoleAsync(user, role);
         }
 
-        public bool AdminCheck()
+        public async Task<bool> AdminCheck()
         {
-            if (_context.Roles.Any(r => r.Name == "admin"))
+            if (!await roleManager.RoleExistsAsync("admin"))
             {
-                return true;
-            }
-            else
-            {
+                var newRole = new IdentityRole();
+                newRole.Name = "admin";
+                await roleManager.CreateAsync(newRole);
+
                 return false;
+            } else
+            {
+                var admins = await userManager.GetUsersInRoleAsync("admin");
+
+                if(admins.Count == 0)
+                {
+                    return false;
+                } else
+                {
+                    return true;
+                }
             }
         }
 
         public Task<IList<string>> GetUserRoles(ksUser user)
         {
             return userManager.GetRolesAsync(user);
+        }
+
+        public Task<IdentityResult> DeleteUser(ksUser user)
+        {
+            return userManager.DeleteAsync(user);
+        }
+
+        public async Task<UserWithToken> CreateUserWToken(ksUser user)
+        {
+            return new UserWithToken
+            {
+                UserId = user.UserName,
+                Token = CreateToken(user),
+                Channels = await GetUserChannels(user),
+                Roles = (List<string>)await GetUserRoles(user),
+                LastVisited = DateTime.Now,
+            };
+        }
+
+        public async Task<List<createChannelDTO>> GetUserChannels(ksUser user)
+        {
+            var userChannels = await _context.UserChannels
+                .Where(uc => uc.UserId == user.Id)
+                .Select(uc => new createChannelDTO
+                {
+                    name = uc.Channel.Name,
+                    type = uc.Channel.Type,
+                }).ToListAsync();
+
+
+            return userChannels;
+        }
+        public async Task<UserChannel> AddNewUserToGeneral(string username)
+        {
+            var user = await userManager.FindByNameAsync(username);
+
+            var newUC = new UserChannel
+            {
+                UserId = user.Id,
+                ChannelName = "General",
+            };
+
+            _context.UserChannels.Add(newUC);
+            await _context.SaveChangesAsync();
+
+            return newUC;
         }
     }
 
@@ -116,11 +183,15 @@ namespace signalrApi.services
         Task AccessFailedAsync(ksUser user);
         Task<IdentityResult> CreateAsync(ksUser user, string password, string role);
         void AddRole(ksUser user, string role);
-        bool AdminCheck();
+        Task<bool> AdminCheck();
         Task<IList<string>> GetUserRoles(ksUser user);
         Task<ksUser> FindByIdAsync(string userId);
         Task<ksUser> FindAllLoggedInUsers();
         Task<IdentityResult> UpdateAsync(ksUser user);
+        Task<IdentityResult> DeleteUser(ksUser user);
+        Task<UserWithToken> CreateUserWToken(ksUser user);
+        Task<List<createChannelDTO>> GetUserChannels(ksUser user);
+        Task<UserChannel> AddNewUserToGeneral(string username);
         string CreateToken(ksUser user);
     }
 }

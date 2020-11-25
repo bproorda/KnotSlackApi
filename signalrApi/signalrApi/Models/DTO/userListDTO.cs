@@ -11,5 +11,6 @@ namespace signalrApi.Models.DTO
         public string Username { get; set; }
 
         public bool LoggedIn { get; set; }
+
     }
 }

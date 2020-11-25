@@ -15,6 +15,7 @@ using signalrApi.Models.Identity;
 using signalrApi.services;
 using signalrApi.Repositories.UserChannelRepos;
 using signalrApi.Models;
+using Microsoft.AspNetCore.Identity;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -26,15 +27,13 @@ namespace signalrApi.Controllers
     {
         private knotSlackDbContext _context;
         private readonly IUserManager userManager;
-        private IUserChannelRepository userChannelRepository;
         private IChatHub chatHub;
 
-        public UsersController(IUserManager userManager, IChatHub chatHub, knotSlackDbContext _context, IUserChannelRepository userChannelRepository)
+        public UsersController(IUserManager userManager, IChatHub chatHub, knotSlackDbContext _context)
         {
             this.userManager = userManager;
             this.chatHub = chatHub;
             this._context = _context;
-            this.userChannelRepository = userChannelRepository;
         }
 
         [HttpPost("Login")]
@@ -51,7 +50,7 @@ namespace signalrApi.Controllers
 
                     await chatHub.SendUpdatedUser(user.UserName, user.LoggedIn);
 
-                    return Ok(CreateUserWToken(user));
+                    return Ok(await userManager.CreateUserWToken(user));
                 }
 
                 await userManager.AccessFailedAsync(user);
@@ -82,12 +81,9 @@ namespace signalrApi.Controllers
 
         public async Task<IActionResult> Register(RegisterData register)
         {
-            var check = register.Role == "admin";
-
             if(register.Role == "admin")
             {
-                var check2 = userManager.AdminCheck();
-                if (check2)
+                if (await userManager.AdminCheck())
                 {
                     return BadRequest(new
                     {
@@ -115,11 +111,7 @@ namespace signalrApi.Controllers
                 });
             }
 
-            await userChannelRepository.AddNewUserToGeneral(user.UserName);
-
-            return Ok(CreateUserWToken(user));
-
-
+            return Ok(await userManager.CreateUserWToken(user));
         }
 
         [Authorize]
@@ -193,16 +185,11 @@ namespace signalrApi.Controllers
             return users.ToArray();
         }
 
-        public async Task<UserWithToken> CreateUserWToken(ksUser user)
+        [HttpPost("deleteuser")]
+        public async Task<IdentityResult> DeleteAUser(DeleteData data)
         {
-            return new UserWithToken
-            {
-                UserId = user.UserName,
-                Token = userManager.CreateToken(user),
-                Channels = await userChannelRepository.GetUserChannels(user),
-                Roles = (List<string>)await userManager.GetUserRoles(user),
-                LastVisited = DateTime.Now,
-            };
+            var user = await userManager.FindByNameAsync(data.Username);
+            return await userManager.DeleteUser(user);
         }
     }
 }

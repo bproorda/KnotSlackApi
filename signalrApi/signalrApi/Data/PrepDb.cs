@@ -38,8 +38,9 @@ namespace signalrApi.Data
             }
             else
             {
-                System.Console.WriteLine("Already have data, seeding canceled.");
+                System.Console.WriteLine("Already have Channel data, seeding canceled.");
             }
+            
 
         }
     }
