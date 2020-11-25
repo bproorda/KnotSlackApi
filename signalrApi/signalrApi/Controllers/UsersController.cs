@@ -186,9 +186,23 @@ namespace signalrApi.Controllers
 
         [Authorize]
         [HttpPost("deleteuser")]
-        public async Task<IdentityResult> DeleteAUser(DeleteData data)
+        public async Task<IActionResult> DeleteAUser(DeleteData data)
         {
-            return await userManager.DeleteUser(data.Username);
+            if (HttpContext.User.Identity is ClaimsIdentity identity)
+            {
+                var usernameClaim = identity.FindFirst("UserId");
+                var userId = usernameClaim.Value;
+                var user = await userManager.FindByIdAsync(userId);
+
+                var isAdmin = await userManager.IsUserAdmin(user);
+
+                if(isAdmin || user.UserName == data.Username)
+                {
+                    return Ok(await userManager.DeleteUser(data.Username));
+                }
+
+            }
+            return Unauthorized();
         }
     }
 }
