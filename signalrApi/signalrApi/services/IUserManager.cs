@@ -44,10 +44,8 @@ namespace signalrApi.services
 
         public async Task<IdentityResult> CreateAsync(ksUser user, string password, string role)
         {
-            var result = await userManager.CreateAsync(user, password);
-
-            //AddRole(user, role);
-            await userManager.AddToRoleAsync(user, role);
+           var result = await userManager.CreateAsync(user, password);
+           await userManager.AddToRoleAsync(user, role);
            await AddNewUserToGeneral(user.UserName);
 
             return result;
@@ -96,11 +94,6 @@ namespace signalrApi.services
             throw new NotImplementedException();
         }
 
-        public async void AddRole(ksUser user, string role)
-        {
-            await userManager.AddToRoleAsync(user, role);
-        }
-
         public async Task<bool> AdminCheck()
         {
             if (!await roleManager.RoleExistsAsync("admin"))
@@ -124,14 +117,17 @@ namespace signalrApi.services
             }
         }
 
-        public Task<IList<string>> GetUserRoles(ksUser user)
+        public async Task<IList<string>> GetUserRoles(ksUser user)
         {
-            return userManager.GetRolesAsync(user);
+            var thisUser = await FindByNameAsync(user.UserName);
+            return await userManager.GetRolesAsync(thisUser);
         }
 
-        public Task<IdentityResult> DeleteUser(ksUser user)
+        public async Task<IdentityResult> DeleteUser(ksUser user)
         {
-            return userManager.DeleteAsync(user);
+            var deletedUser = await FindByNameAsync(user.UserName);
+
+            return await userManager.DeleteAsync(deletedUser);
         }
 
         public async Task<UserWithToken> CreateUserWToken(ksUser user)
@@ -174,6 +170,11 @@ namespace signalrApi.services
 
             return newUC;
         }
+
+        public async Task<bool> IsUserAdmin(ksUser user)
+        {
+            return await userManager.IsInRoleAsync(user, "admin");
+        }
     }
 
     public interface IUserManager
@@ -182,8 +183,8 @@ namespace signalrApi.services
         Task<bool> CheckPasswordAsync(ksUser user, string password);
         Task AccessFailedAsync(ksUser user);
         Task<IdentityResult> CreateAsync(ksUser user, string password, string role);
-        void AddRole(ksUser user, string role);
         Task<bool> AdminCheck();
+        Task<bool> IsUserAdmin(ksUser user);
         Task<IList<string>> GetUserRoles(ksUser user);
         Task<ksUser> FindByIdAsync(string userId);
         Task<ksUser> FindAllLoggedInUsers();
