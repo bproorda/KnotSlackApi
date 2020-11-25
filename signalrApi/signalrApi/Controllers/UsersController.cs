@@ -50,7 +50,7 @@ namespace signalrApi.Controllers
 
                     await chatHub.SendUpdatedUser(user.UserName, user.LoggedIn);
 
-                    return Ok(await userManager.CreateUserWToken(user));
+                    return Ok(await userManager.CreateUserWithToken(user));
                 }
 
                 await userManager.AccessFailedAsync(user);
@@ -113,7 +113,7 @@ namespace signalrApi.Controllers
                 });
             }
 
-            return Ok(await userManager.CreateUserWToken(user));
+            return Ok(await userManager.CreateUserWithToken(user));
         }
 
         [Authorize]
@@ -141,19 +141,14 @@ namespace signalrApi.Controllers
         }
 
         [Authorize(Roles ="admin")]
-        [HttpGet("{userId}")]
-        public async Task<IActionResult> GetUser(string userId)
+        [HttpPost("getuser")]
+        public async Task<IActionResult> GetUser(DeleteData input)
         {
-            var user = await userManager.FindByIdAsync(userId);
+            var user = await userManager.FindByNameAsync(input.Username);
             if (user == null)
                 return NotFound();
 
-            return Ok(new
-            {
-                UserId = user.Id,
-                user.Email,
-
-            });
+            return Ok(await userManager.CreateUserWithoutToken(user));
         }
 
         [Authorize(Roles = "admin")]
@@ -189,11 +184,11 @@ namespace signalrApi.Controllers
             return users.ToArray();
         }
 
+        [Authorize]
         [HttpPost("deleteuser")]
         public async Task<IdentityResult> DeleteAUser(DeleteData data)
         {
-            var user = await userManager.FindByNameAsync(data.Username);
-            return await userManager.DeleteUser(user);
+            return await userManager.DeleteUser(data.Username);
         }
     }
 }

@@ -125,19 +125,30 @@ namespace signalrApi.services
             return await userManager.GetRolesAsync(thisUser);
         }
 
-        public async Task<IdentityResult> DeleteUser(ksUser user)
+        public async Task<IdentityResult> DeleteUser(string username)
         {
-            var deletedUser = await FindByNameAsync(user.UserName);
+            var deletedUser = await FindByNameAsync(username);
 
             return await userManager.DeleteAsync(deletedUser);
         }
 
-        public async Task<UserWithToken> CreateUserWToken(ksUser user)
+        public async Task<UserWithToken> CreateUserWithToken(ksUser user)
         {
             return new UserWithToken
             {
                 UserId = user.UserName,
                 Token = await CreateToken(user),
+                Channels = await GetUserChannels(user),
+                Roles = (List<string>)await GetUserRoles(user),
+                LastVisited = DateTime.Now,
+            };
+        }
+
+        public async Task<UserWithoutToken> CreateUserWithoutToken(ksUser user)
+        {
+            return new UserWithoutToken
+            {
+                UserId = user.UserName,
                 Channels = await GetUserChannels(user),
                 Roles = (List<string>)await GetUserRoles(user),
                 LastVisited = DateTime.Now,
@@ -191,8 +202,9 @@ namespace signalrApi.services
         Task<ksUser> FindByIdAsync(string userId);
         Task<ksUser> FindAllLoggedInUsers();
         Task<IdentityResult> UpdateAsync(ksUser user);
-        Task<IdentityResult> DeleteUser(ksUser user);
-        Task<UserWithToken> CreateUserWToken(ksUser user);
+        Task<IdentityResult> DeleteUser(string username);
+        Task<UserWithToken> CreateUserWithToken(ksUser user);
+        Task<UserWithoutToken> CreateUserWithoutToken(ksUser user);
         Task<List<createChannelDTO>> GetUserChannels(ksUser user);
         Task<UserChannel> AddNewUserToGeneral(string username);
         Task<string> CreateToken(ksUser user);
