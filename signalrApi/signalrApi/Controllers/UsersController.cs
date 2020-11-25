@@ -51,15 +51,7 @@ namespace signalrApi.Controllers
 
                     await chatHub.SendUpdatedUser(user.UserName, user.LoggedIn);
 
-                    var channels = await userChannelRepository.GetUserChannels(user);
-
-                    return Ok(new UserWithToken
-                    {
-                        UserId = user.UserName,
-                        Token = userManager.CreateToken(user),
-                        Channels = channels,
-                        LastVisited = user.LastVisited,
-                    });
+                    return Ok(CreateUserWToken(user));
                 }
 
                 await userManager.AccessFailedAsync(user);
@@ -90,6 +82,21 @@ namespace signalrApi.Controllers
 
         public async Task<IActionResult> Register(RegisterData register)
         {
+            var check = register.Role == "admin";
+
+            if(register.Role == "admin")
+            {
+                var check2 = userManager.AdminCheck();
+                if (check2)
+                {
+                    return BadRequest(new
+                    {
+                        message = "registration failed",
+                        errors = "Only Admin can assign role of Admin"
+                    });
+                }
+            }
+
             var user = new ksUser
             {
                 Email = register.Email,
@@ -98,8 +105,8 @@ namespace signalrApi.Controllers
 
             };
 
-            var result = await userManager.CreateAsync(user, register.Password);
-            if (!result.Succeeded)
+            var result = await userManager.CreateAsync(user, register.Password, register.Role);
+            if (!result.Succeeded )
             {
                 return BadRequest(new
                 {
@@ -110,15 +117,7 @@ namespace signalrApi.Controllers
 
             await userChannelRepository.AddNewUserToGeneral(user.UserName);
 
-            var channels = await userChannelRepository.GetUserChannels(user);
-
-            return Ok(new UserWithToken
-            {
-                UserId = user.UserName,
-                Token = userManager.CreateToken(user),
-                Channels = channels,
-                LastVisited = DateTime.Now,
-            });
+            return Ok(CreateUserWToken(user));
 
 
         }
@@ -192,6 +191,18 @@ namespace signalrApi.Controllers
                         }).ToListAsync();
 
             return users.ToArray();
+        }
+
+        public async Task<UserWithToken> CreateUserWToken(ksUser user)
+        {
+            return new UserWithToken
+            {
+                UserId = user.UserName,
+                Token = userManager.CreateToken(user),
+                Channels = await userChannelRepository.GetUserChannels(user),
+                Roles = (List<string>)await userManager.GetUserRoles(user),
+                LastVisited = DateTime.Now,
+            };
         }
     }
 }

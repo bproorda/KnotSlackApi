@@ -13,5 +13,7 @@ namespace signalrApi.Models.Identity
 
         public DateTime LastVisited { get; set; }
         public List<createChannelDTO> Channels { get; set; }
+
+        public List<string> Roles { get; set; }
     }
 }

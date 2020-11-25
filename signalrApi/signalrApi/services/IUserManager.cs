@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using signalrApi.Data;
 using signalrApi.Models.Identity;
 using System;
 using System.Collections.Generic;
@@ -16,11 +17,13 @@ namespace signalrApi.services
     {
         private readonly UserManager<ksUser> userManager;
         private readonly IConfiguration configuration;
+        private knotSlackDbContext _context;
 
-        public UserManagerWrapper(UserManager<ksUser> userManager, IConfiguration configuration)
+        public UserManagerWrapper(UserManager<ksUser> userManager, IConfiguration configuration, knotSlackDbContext _context)
         {
             this.userManager = userManager;
             this.configuration = configuration;
+            this._context = _context;
         }
 
         public Task AccessFailedAsync(ksUser user)
@@ -33,9 +36,11 @@ namespace signalrApi.services
             return userManager.CheckPasswordAsync(user, password);
         }
 
-        public Task<IdentityResult> CreateAsync(ksUser user, string password)
+        public Task<IdentityResult> CreateAsync(ksUser user, string password, string role)
         {
-            return userManager.CreateAsync(user, password);
+            var result = userManager.CreateAsync(user, password);
+            AddRole(user, role);
+            return result;
         }
 
         public Task<ksUser> FindByIdAsync(string userId)
@@ -80,6 +85,28 @@ namespace signalrApi.services
         {
             throw new NotImplementedException();
         }
+
+        public void AddRole(ksUser user, string role)
+        {
+            userManager.AddToRoleAsync(user, role);
+        }
+
+        public bool AdminCheck()
+        {
+            if (_context.Roles.Any(r => r.Name == "admin"))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public Task<IList<string>> GetUserRoles(ksUser user)
+        {
+            return userManager.GetRolesAsync(user);
+        }
     }
 
     public interface IUserManager
@@ -87,7 +114,10 @@ namespace signalrApi.services
         Task<ksUser> FindByNameAsync(string username);
         Task<bool> CheckPasswordAsync(ksUser user, string password);
         Task AccessFailedAsync(ksUser user);
-        Task<IdentityResult> CreateAsync(ksUser user, string password);
+        Task<IdentityResult> CreateAsync(ksUser user, string password, string role);
+        void AddRole(ksUser user, string role);
+        bool AdminCheck();
+        Task<IList<string>> GetUserRoles(ksUser user);
         Task<ksUser> FindByIdAsync(string userId);
         Task<ksUser> FindAllLoggedInUsers();
         Task<IdentityResult> UpdateAsync(ksUser user);
