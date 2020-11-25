@@ -75,6 +75,7 @@ namespace signalrApi
             });
 
             services.AddIdentity<ksUser, IdentityRole>()
+                .AddRoles<IdentityRole>()
                .AddEntityFrameworkStores<knotSlackDbContext>()
                ;
             services
