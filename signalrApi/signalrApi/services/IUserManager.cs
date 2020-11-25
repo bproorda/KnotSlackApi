@@ -66,16 +66,18 @@ namespace signalrApi.services
             return userManager.UpdateAsync(user);
         }
 
-        public string CreateToken(ksUser user)
+        public async Task<string> CreateToken(ksUser user)
         {
             var secret = configuration["JWT:Secret"];
             var secretBytes = Encoding.UTF8.GetBytes(secret);
             var signingKey = new SymmetricSecurityKey(secretBytes);
+            var roles = (List<string>)await userManager.GetRolesAsync(user);
 
             var tokenClaims = new[]
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
                 new Claim("UserId", user.Id),
+                new Claim(ClaimTypes.Role, roles[0]),
             };
 
             var token = new JwtSecurityToken(
@@ -135,7 +137,7 @@ namespace signalrApi.services
             return new UserWithToken
             {
                 UserId = user.UserName,
-                Token = CreateToken(user),
+                Token = await CreateToken(user),
                 Channels = await GetUserChannels(user),
                 Roles = (List<string>)await GetUserRoles(user),
                 LastVisited = DateTime.Now,
@@ -193,6 +195,6 @@ namespace signalrApi.services
         Task<UserWithToken> CreateUserWToken(ksUser user);
         Task<List<createChannelDTO>> GetUserChannels(ksUser user);
         Task<UserChannel> AddNewUserToGeneral(string username);
-        string CreateToken(ksUser user);
+        Task<string> CreateToken(ksUser user);
     }
 }

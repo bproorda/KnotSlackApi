@@ -81,6 +81,8 @@ namespace signalrApi.Controllers
 
         public async Task<IActionResult> Register(RegisterData register)
         {
+
+            //if desired role is admin, check to see if any there is a current admin. Allows first person to request admin status to get it
             if(register.Role == "admin")
             {
                 if (await userManager.AdminCheck())
@@ -138,6 +140,7 @@ namespace signalrApi.Controllers
             return Unauthorized();
         }
 
+        [Authorize(Roles ="admin")]
         [HttpGet("{userId}")]
         public async Task<IActionResult> GetUser(string userId)
         {
@@ -153,6 +156,7 @@ namespace signalrApi.Controllers
             });
         }
 
+        [Authorize(Roles = "admin")]
         [HttpPut("userId")]
 
         public async Task<IActionResult> UpdateUser(string userId, ksUser data)
