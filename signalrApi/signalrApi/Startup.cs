@@ -36,11 +36,13 @@ namespace signalrApi
             services.AddControllers().AddNewtonsoftJson(options =>
                 options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
                 );
+            //"Data Source=" + hostname + ";Initial Catalog=" + dbname + ";User ID=" + username + ";Password=" + password + ";";
 
+            var awsConnectString = "Data Source=knotslackdb.cbsxnwip0rhj.us-east-2.rds.amazonaws.com;Initial Catalog=knotslackdb;User ID=admin;Password=1Kn0TT1m!";
             services.AddDbContext<knotSlackDbContext>(options =>
             {
                 string connectionString = Configuration.GetConnectionString("DefaultConnection");
-                options.UseSqlServer(connectionString);
+                options.UseSqlServer(awsConnectString);
             });
 
             services.AddTransient<IUserManager, UserManagerWrapper>();
@@ -147,6 +149,8 @@ namespace signalrApi
                 endpoints.MapControllers();
                 endpoints.MapHub<ChatHub>("/chathub");
             });
+
+            PrepDb.PrepDatabase(app);
         }
 
 
