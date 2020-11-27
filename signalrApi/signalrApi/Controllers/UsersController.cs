@@ -183,7 +183,7 @@ namespace signalrApi.Controllers
 
             return users.ToArray();
         }
-
+        //set up so a user can delete only their own account, and an admin can delete any.
         [Authorize]
         [HttpPost("deleteuser")]
         public async Task<IActionResult> DeleteAUser(DeleteData data)

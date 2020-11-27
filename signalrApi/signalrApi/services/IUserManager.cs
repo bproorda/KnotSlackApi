@@ -44,6 +44,13 @@ namespace signalrApi.services
 
         public async Task<IdentityResult> CreateAsync(ksUser user, string password, string role)
         {
+            if(role == "user" && !_context.Roles.Any(r => r.Name == "user"))
+            {
+                var newRole = new IdentityRole();
+                newRole.Name = "user";
+                await roleManager.CreateAsync(newRole);
+            }
+
            var result = await userManager.CreateAsync(user, password);
            await userManager.AddToRoleAsync(user, role);
            await AddNewUserToGeneral(user.UserName);
