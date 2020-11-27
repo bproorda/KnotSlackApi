@@ -37,7 +37,7 @@ namespace signalrApi
                 options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
                 );
 
-            var awsConnectString = Configuration["AwsConnect"];
+            var awsConnectString = Configuration["DbConnect"];
             services.AddDbContext<knotSlackDbContext>(options =>
             {
                 //string connectionString = Configuration.GetConnectionString("DefaultConnection");
