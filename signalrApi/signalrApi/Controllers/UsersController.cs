@@ -15,6 +15,7 @@ using signalrApi.Models.Identity;
 using signalrApi.services;
 using signalrApi.Repositories.UserChannelRepos;
 using signalrApi.Models;
+using Microsoft.AspNetCore.Identity;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -26,15 +27,13 @@ namespace signalrApi.Controllers
     {
         private knotSlackDbContext _context;
         private readonly IUserManager userManager;
-        private IUserChannelRepository userChannelRepository;
         private IChatHub chatHub;
 
-        public UsersController(IUserManager userManager, IChatHub chatHub, knotSlackDbContext _context, IUserChannelRepository userChannelRepository)
+        public UsersController(IUserManager userManager, IChatHub chatHub, knotSlackDbContext _context)
         {
             this.userManager = userManager;
             this.chatHub = chatHub;
             this._context = _context;
-            this.userChannelRepository = userChannelRepository;
         }
 
         [HttpPost("Login")]
@@ -51,15 +50,7 @@ namespace signalrApi.Controllers
 
                     await chatHub.SendUpdatedUser(user.UserName, user.LoggedIn);
 
-                    var channels = await userChannelRepository.GetUserChannels(user);
-
-                    return Ok(new UserWithToken
-                    {
-                        UserId = user.UserName,
-                        Token = userManager.CreateToken(user),
-                        Channels = channels,
-                        LastVisited = user.LastVisited,
-                    });
+                    return Ok(await userManager.CreateUserWithToken(user));
                 }
 
                 await userManager.AccessFailedAsync(user);
@@ -90,6 +81,20 @@ namespace signalrApi.Controllers
 
         public async Task<IActionResult> Register(RegisterData register)
         {
+
+            //if desired role is admin, check to see if any there is a current admin. Allows first person to request admin status to get it
+            if(register.Role == "admin")
+            {
+                if (await userManager.AdminCheck())
+                {
+                    return BadRequest(new
+                    {
+                        message = "registration failed",
+                        errors = "Only Admin can assign role of Admin"
+                    });
+                }
+            }
+
             var user = new ksUser
             {
                 Email = register.Email,
@@ -98,8 +103,8 @@ namespace signalrApi.Controllers
 
             };
 
-            var result = await userManager.CreateAsync(user, register.Password);
-            if (!result.Succeeded)
+            var result = await userManager.CreateAsync(user, register.Password, register.Role);
+            if (!result.Succeeded )
             {
                 return BadRequest(new
                 {
@@ -108,19 +113,7 @@ namespace signalrApi.Controllers
                 });
             }
 
-            await userChannelRepository.AddNewUserToGeneral(user.UserName);
-
-            var channels = await userChannelRepository.GetUserChannels(user);
-
-            return Ok(new UserWithToken
-            {
-                UserId = user.UserName,
-                Token = userManager.CreateToken(user),
-                Channels = channels,
-                LastVisited = DateTime.Now,
-            });
-
-
+            return Ok(await userManager.CreateUserWithToken(user));
         }
 
         [Authorize]
@@ -147,21 +140,18 @@ namespace signalrApi.Controllers
             return Unauthorized();
         }
 
-        [HttpGet("{userId}")]
-        public async Task<IActionResult> GetUser(string userId)
+        [Authorize(Roles ="admin")]
+        [HttpPost("getuser")]
+        public async Task<IActionResult> GetUser(DeleteData input)
         {
-            var user = await userManager.FindByIdAsync(userId);
+            var user = await userManager.FindByNameAsync(input.Username);
             if (user == null)
                 return NotFound();
 
-            return Ok(new
-            {
-                UserId = user.Id,
-                user.Email,
-
-            });
+            return Ok(await userManager.CreateUserWithoutToken(user));
         }
 
+        [Authorize(Roles = "admin")]
         [HttpPut("userId")]
 
         public async Task<IActionResult> UpdateUser(string userId, ksUser data)
@@ -192,6 +182,27 @@ namespace signalrApi.Controllers
                         }).ToListAsync();
 
             return users.ToArray();
+        }
+        //set up so a user can delete only their own account, and an admin can delete any.
+        [Authorize]
+        [HttpPost("deleteuser")]
+        public async Task<IActionResult> DeleteAUser(DeleteData data)
+        {
+            if (HttpContext.User.Identity is ClaimsIdentity identity)
+            {
+                var usernameClaim = identity.FindFirst("UserId");
+                var userId = usernameClaim.Value;
+                var user = await userManager.FindByIdAsync(userId);
+
+                var isAdmin = await userManager.IsUserAdmin(user);
+
+                if(isAdmin || user.UserName == data.Username)
+                {
+                    return Ok(await userManager.DeleteUser(data.Username));
+                }
+
+            }
+            return Unauthorized();
         }
     }
 }

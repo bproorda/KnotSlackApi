@@ -73,6 +73,7 @@ namespace signalrApi.Controllers
         }
 
         // DELETE api/<MessageController>/5
+        [Authorize(Roles = "admin")]
         [HttpDelete("{id}")]
         public async Task<ActionResult<bool>> Delete(int id)
         {
@@ -87,7 +88,7 @@ namespace signalrApi.Controllers
         }
 
         //Deleting all messages sent by a specific user
-        [Authorize]
+        [Authorize(Roles = "admin")]
         [HttpPost("delsender")]
         public async Task<ActionResult<bool>> DeleteBySender(userDTO user)
         {

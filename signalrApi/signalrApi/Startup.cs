@@ -37,14 +37,14 @@ namespace signalrApi
                 options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
                 );
 
+            var awsConnectString = Configuration["DbConnect"];
             services.AddDbContext<knotSlackDbContext>(options =>
             {
-                string connectionString = Configuration.GetConnectionString("DefaultConnection");
-                options.UseSqlServer(connectionString);
+                //string connectionString = Configuration.GetConnectionString("DefaultConnection");
+                options.UseSqlServer(awsConnectString);
             });
 
             services.AddTransient<IUserManager, UserManagerWrapper>();
-            
             services.AddTransient<IChatHub, ChatHub>();
             services.AddScoped<IMessageRepository, MessageRepository>();
             services.AddTransient<IChannelRepository, ChannelRepository>();
@@ -73,6 +73,7 @@ namespace signalrApi
             });
 
             services.AddIdentity<ksUser, IdentityRole>()
+                .AddRoles<IdentityRole>()
                .AddEntityFrameworkStores<knotSlackDbContext>()
                ;
             services
@@ -147,6 +148,8 @@ namespace signalrApi
                 endpoints.MapControllers();
                 endpoints.MapHub<ChatHub>("/chathub");
             });
+
+            PrepDb.PrepDatabase(app);
         }
 
 
