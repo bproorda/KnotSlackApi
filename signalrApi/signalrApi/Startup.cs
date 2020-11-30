@@ -38,6 +38,17 @@ namespace signalrApi
                 );
 
             var awsConnectString = Configuration["DbConnect"];
+            Console.WriteLine($"connection string is: {awsConnectString}");
+            Console.WriteLine("\n");
+
+            var dbname = Configuration["RDS_DB_NAME"];
+            string username = Configuration["RDS_USERNAME"];
+            string password = Configuration["RDS_PASSWORD"];
+            string hostname = Configuration["RDS_HOSTNAME"];
+            string port = Configuration["RDS_PORT"];
+
+            string DbConnect = "Data Source=" + hostname + ";Initial Catalog=" + dbname + ";User ID=" + username + ";Password=" + password + ";";
+
             services.AddDbContext<knotSlackDbContext>(options =>
             {
                 //string connectionString = Configuration.GetConnectionString("DefaultConnection");
@@ -89,7 +100,8 @@ namespace signalrApi
                     options.RequireHttpsMetadata = false;
                     options.SaveToken = true;
 
-                    var secret = Configuration["JWT:Secret"];
+                    var secret = Configuration["JWTSecret"];
+                    Console.WriteLine($"JWT secret is: {secret}");
                     var secretBytes = Encoding.UTF8.GetBytes(secret);
                     var signingKey = new SymmetricSecurityKey(secretBytes);
 
@@ -124,7 +136,7 @@ namespace signalrApi
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
 
             app.UseRouting();
 

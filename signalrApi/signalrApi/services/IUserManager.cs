@@ -75,7 +75,7 @@ namespace signalrApi.services
 
         public async Task<string> CreateToken(ksUser user)
         {
-            var secret = configuration["JWT:Secret"];
+            var secret = configuration["JWTSecret"];
             var secretBytes = Encoding.UTF8.GetBytes(secret);
             var signingKey = new SymmetricSecurityKey(secretBytes);
             var roles = (List<string>)await userManager.GetRolesAsync(user);
