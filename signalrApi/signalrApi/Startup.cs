@@ -38,8 +38,7 @@ namespace signalrApi
                 );
 
             var awsConnectString = Configuration["DbConnect"];
-            Console.WriteLine($"connection string is: {awsConnectString}");
-            Console.WriteLine("\n");
+            //Console.WriteLine($"connection string is: {awsConnectString}");
 
             var dbname = Configuration["RDS_DB_NAME"];
             string username = Configuration["RDS_USERNAME"];
@@ -101,7 +100,7 @@ namespace signalrApi
                     options.SaveToken = true;
 
                     var secret = Configuration["JWTSecret"];
-                    Console.WriteLine($"JWT secret is: {secret}");
+                    //Console.WriteLine($"JWT secret is: {secret}");
                     var secretBytes = Encoding.UTF8.GetBytes(secret);
                     var signingKey = new SymmetricSecurityKey(secretBytes);
 
