@@ -1,7 +1,7 @@
 # KnotSlack
 Welcome to my Slack Clone!
 This is a Chat application created using React.js on the front end, an Asp.net Core back end with Entity Framework. The real time chat is powered by Signalr.
-It allows for messages to be sent to everyone, a specific group, or a specific user.
+It allows for messages to be sent to everyone, a specific group, or a specific user in real-time.
 
 Any Comments/Advice would be appreciated!
 
@@ -9,17 +9,18 @@ Any Comments/Advice would be appreciated!
 [Introduction to SignalR](https://docs.microsoft.com/en-us/aspnet/core/signalr/introduction?view=aspnetcore-3.1)
 SignalR is a library for adding real time functionality to applications using web sockets. For those who are unfamiliar, a usual HTTP connection is only one way. The client sends a request to the server and the server responds. A web socket allows for two way communication. In SignalR, the client can call hub(on the server) methods, and the hub can call client methods. 
 
-## Using KnotSlack (currently not deployed)
+## Using KnotSlack 
 
-1. Clone the repo. (This is kind of like telling to take off the plastic wrapper before you microwave the popcorn, isn't it?)
+1. Clone the repos. React Front end repo: https://github.com/bproorda/KnotSlackReact
 
-2. Open up the SignalrApi directory in Visual Studio
+2. Open up the SignalrApi directory in Visual Studio, make sure you have all the required packages.
 
-3. Make sure both projects are set as startup projects.
+3. You can open the front end in Visual studio code. Make sure you run npm install. Then use npm start to well, start.
 
-4. The API will open to Swagger documentation. Please not that these do not include the Signalr hub methods.
+4. The API will open to Swagger documentation. Please note that these do not include the Signalr hub methods.
 
-5. The front end will open to the homepage. Register as a user to begin, or login if you have already.
+5. The front end will open to the homepage. Register as a user to begin, login, or enter as guest user.
+    -NOTE: a guest user will only have access to General Chat
 
 6. Chat Away! You will start off in the General Chat Area.
 
@@ -41,7 +42,7 @@ SignalR is a library for adding real time functionality to applications using we
  
   - Private: Sends messages to a specific user only.
   
-  - Each window takes care of sending messages, but they are received by the Hub Context
+  - Each window takes care of sending messages, but they are all received by the Hub Context
  
 - This application has two React contexts
 
