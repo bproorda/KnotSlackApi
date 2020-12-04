@@ -37,13 +37,13 @@ namespace signalrApi.Hubs
         public async Task<Message> WriteMessage(string sender, string recipient, string contents)
         {
             var user = await userManager.FindByNameAsync(sender);
-
+            
             var message = new Message
             {
                 Sender = sender,
                 Recipient = recipient,
                 Contents = contents,
-                UserId = user.Id,
+                UserId = (user != null) ? user.Id : null,
                 Date = DateTime.Now,
             };
 
