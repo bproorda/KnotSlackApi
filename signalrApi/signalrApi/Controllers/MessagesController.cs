@@ -53,6 +53,12 @@ namespace signalrApi.Controllers
             var messages = await messageRepository.GetMyMessages(user);
             return messages;
         }
+        [HttpGet("genmsg")]
+        public async Task<IEnumerable<Message>> GetGeneralMessages()
+        {
+            var messages = await messageRepository.GetMessagesByRecipient("General");
+            return messages;
+        }
 
         [HttpPost("new")]
         public async Task<bool> CreateNewMessage(messageCreateDTO msg)
